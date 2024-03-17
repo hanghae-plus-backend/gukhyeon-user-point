@@ -6,6 +6,7 @@ import { PointBody as PointDto } from "./point.dto";
 
 @Controller('/point')
 export class PointController {
+    //동시성 제어를 위한 userid와 promise 맵
     taskQueues: Map<number, Promise<any>> = new Map();
 
     constructor(
@@ -19,7 +20,7 @@ export class PointController {
             try {
                 await previousTask;
             } catch (error) {
-                // Previous task failed; we're catching the error to not break the chain.
+                // 실패한 테스크는 거른다.
                 console.error("Previous task failed", error);
             }
             return task();
@@ -28,7 +29,7 @@ export class PointController {
         const taskPromise = nextTask();
         this.taskQueues.set(userId, taskPromise);
     
-        // Ensures the task is removed from the queue once it's completed or failed.
+        //완료되거나 실패한 queue의 경우 삭제
         taskPromise.then(
             () => this.taskQueues.delete(userId),
             () => this.taskQueues.delete(userId)
@@ -103,7 +104,7 @@ export class PointController {
             const currentUserPoint = await this.userDb.selectById(userId);
             if(currentUserPoint.point < amount) throw new BadRequestException('사용하려는 포인트가 보유 포인트보다 큽니다.');
 
-            await this.modifyUserPoint(currentUserPoint,-amount,TransactionType.USE)
+            await this.modifyUserPoint(currentUserPoint,amount,TransactionType.USE)
         });
         
         const updatedPoint = await this.userDb.selectById(userId);
@@ -112,7 +113,7 @@ export class PointController {
 
     async modifyUserPoint(currentUserPoint: UserPoint,amount:number,type:TransactionType):Promise<UserPoint>{
         // 사용자 포인트 적용
-        const updatedPoint = currentUserPoint.point + amount;
+        const updatedPoint = type == TransactionType.USE ? currentUserPoint.point - amount : currentUserPoint.point + amount;
 
         // 사용자 포인트 갱신
         const updatedUserPoint = await this.userDb.insertOrUpdate(currentUserPoint.id, updatedPoint);
