@@ -111,7 +111,7 @@ export class PointController {
         return {id: updatedPoint.id, point: updatedPoint.point, updateMillis: Date.now()} 
     }
 
-    async modifyUserPoint(currentUserPoint: UserPoint,amount:number,type:TransactionType):Promise<UserPoint>{
+    async modifyUserPoint(currentUserPoint: UserPoint,amount:number,type:TransactionType){
         // 사용자 포인트 적용
         const updatedPoint = type == TransactionType.USE ? currentUserPoint.point - amount : currentUserPoint.point + amount;
 
@@ -120,7 +120,5 @@ export class PointController {
 
         // 로그 남기기
         await this.historyDb.insert(currentUserPoint.id,amount,type,Date.now())
-
-        return { id: currentUserPoint.id, point: updatedUserPoint.point, updateMillis: Date.now() }
     }
 }
