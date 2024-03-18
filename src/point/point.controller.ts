@@ -12,6 +12,11 @@ import { UserPointTable } from 'src/database/userpoint.table';
 import { PointHistoryTable } from 'src/database/pointhistory.table';
 import { PointBody as PointDto } from './point.dto';
 
+enum PointExceptionMessage {
+  INVALID_POINT = '올바르지 않은 포인트 입니다.',
+  EXCEED_DO_USE_POINT = '사용하려는 포인트가 보유 포인트보다 큽니다.',
+}
+
 @Controller('/point')
 export class PointController {
   //동시성 제어를 위한 userid와 promise 맵
@@ -83,7 +88,7 @@ export class PointController {
     //(1) 충전하려는 포인트가 마이너스(예외의 값)인가
     //(2) 충전하려는 포인트가 너무 크진 않은가
     if (amount < 0 || amount > 100000)
-      throw new BadRequestException('올바르지 않은 포인트 입니다.');
+      throw new BadRequestException(PointExceptionMessage.INVALID_POINT);
 
     await this.enqueueTask(userId, async () => {
       const currentUserPoint = await this.userDb.selectById(userId);
@@ -118,14 +123,14 @@ export class PointController {
     //(2) 사용하려는 포인트가 너무 크진 않은가
     //(3) 사용하려는 포인트가 유저가 가지고 있는 포인트보다 큰가
     if (amount < 0 || amount > 100000)
-      throw new BadRequestException('올바르지 않은 포인트 입니다.');
+      throw new BadRequestException(PointExceptionMessage.INVALID_POINT);
 
     await this.enqueueTask(userId, async () => {
       // 사용자의 포인트 조회
       const currentUserPoint = await this.userDb.selectById(userId);
       if (currentUserPoint.point < amount)
         throw new BadRequestException(
-          '사용하려는 포인트가 보유 포인트보다 큽니다.',
+          PointExceptionMessage.EXCEED_DO_USE_POINT,
         );
 
       await this.modifyUserPoint(currentUserPoint, amount, TransactionType.USE);
