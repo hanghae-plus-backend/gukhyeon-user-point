@@ -36,7 +36,7 @@ export class PointController {
                 // 실패한 테스크는 거른다.
                 console.error('Previous task failed', error)
             }
-            return task()
+            return await task()
         }
 
         const taskPromise = nextTask()
@@ -57,7 +57,6 @@ export class PointController {
     @Get(':id')
     async point(@Param('id') id): Promise<UserPoint> {
         const userId = Number.parseInt(id)
-
         const userPoint = await this.userDb.selectById(userId)
 
         return {
@@ -102,12 +101,7 @@ export class PointController {
             )
         })
 
-        const updatedPoint = await this.userDb.selectById(userId)
-        return {
-            id: updatedPoint.id,
-            point: updatedPoint.point,
-            updateMillis: Date.now(),
-        }
+        return await this.userDb.selectById(userId)
     }
 
     /**
@@ -143,12 +137,7 @@ export class PointController {
             )
         })
 
-        const updatedPoint = await this.userDb.selectById(userId)
-        return {
-            id: updatedPoint.id,
-            point: updatedPoint.point,
-            updateMillis: Date.now(),
-        }
+        return await this.userDb.selectById(userId)
     }
 
     async modifyUserPoint(
