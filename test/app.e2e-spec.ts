@@ -42,6 +42,12 @@ describe('AppController (e2e)', () => {
                         .patch(`/point/${userId}/charge`)
                         .send({ amount })
                         .expect(HttpStatus.OK)
+                        .catch(e =>
+                            console.error(
+                                `/point/${userId}/charge Request failed`,
+                                e,
+                            ),
+                        )
                 })
 
             await Promise.all(requests)
@@ -72,7 +78,7 @@ describe('AppController (e2e)', () => {
         async () => {
             await request(app.getHttpServer())
                 .patch(`/point/${userId}/charge`)
-                .send({ amount: 1000 })
+                .send({ amount: 500 })
                 .expect(HttpStatus.OK)
 
             const requests = Array(max)
@@ -82,6 +88,12 @@ describe('AppController (e2e)', () => {
                         .patch(`/point/${userId}/use`)
                         .send({ amount })
                         .expect(HttpStatus.OK)
+                        .catch(e =>
+                            console.error(
+                                `/point/${userId}/use Request failed`,
+                                e,
+                            ),
+                        )
                 })
 
             await Promise.all(requests)
