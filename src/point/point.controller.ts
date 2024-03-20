@@ -57,13 +57,7 @@ export class PointController {
     @Get(':id')
     async point(@Param('id') id): Promise<UserPoint> {
         const userId = Number.parseInt(id)
-        const userPoint = await this.userDb.selectById(userId)
-
-        return {
-            id: userId,
-            point: userPoint.point,
-            updateMillis: userPoint.updateMillis,
-        }
+        return await this.userDb.selectById(userId)
     }
 
     /**
@@ -155,14 +149,17 @@ export class PointController {
                 : currentUserPoint.point + amount
 
         // 사용자 포인트 갱신
-        await this.userDb.insertOrUpdate(currentUserPoint.id, updatedPoint)
+        const updatedUserPoint = await this.userDb.insertOrUpdate(
+            currentUserPoint.id,
+            updatedPoint,
+        )
 
         // 로그 남기기
         await this.historyDb.insert(
             currentUserPoint.id,
             amount,
             type,
-            Date.now(),
+            updatedUserPoint.updateMillis,
         )
     }
 }
