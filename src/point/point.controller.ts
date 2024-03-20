@@ -89,8 +89,7 @@ export class PointController {
         //포인트 충전할때 유의해야할것
         //(1) 충전하려는 포인트가 마이너스(예외의 값)인가
         //(2) 충전하려는 포인트가 너무 크진 않은가
-        if (amount < 0 || amount > 100000)
-            throw new BadRequestException(PointExceptionMessage.INVALID_POINT)
+        this.validatePoint(amount)
 
         await this.enqueueTask(userId, async () => {
             const currentUserPoint = await this.userDb.selectById(userId)
@@ -119,8 +118,7 @@ export class PointController {
         //(1) 사용하려는 포인트가 마이너스(예외의 값)인가
         //(2) 사용하려는 포인트가 너무 크진 않은가
         //(3) 사용하려는 포인트가 유저가 가지고 있는 포인트보다 큰가
-        if (amount < 0 || amount > 100000)
-            throw new BadRequestException(PointExceptionMessage.INVALID_POINT)
+        this.validatePoint(amount)
 
         await this.enqueueTask(userId, async () => {
             // 사용자의 포인트 조회
@@ -138,6 +136,11 @@ export class PointController {
         })
 
         return await this.userDb.selectById(userId)
+    }
+
+    validatePoint(amount: number) {
+        if (amount < 0 || amount > 100000)
+            throw new BadRequestException(PointExceptionMessage.INVALID_POINT)
     }
 
     async modifyUserPoint(
