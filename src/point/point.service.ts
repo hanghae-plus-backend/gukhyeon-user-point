@@ -71,16 +71,21 @@ export class PointService {
         amount: number,
         type: TransactionType,
     ): Promise<UserPoint> {
-        try {
-            // 사용자 포인트 적용
-            const updatedPoint = currentUserPoint.point + amount
+        // 사용자 포인트 적용
+        const updatedPoint = currentUserPoint.point + amount
+        let updatedUserPoint: UserPoint
 
+        try {
             // 사용자 포인트 갱신
-            const updatedUserPoint = await this.userDb.insertOrUpdate(
+            updatedUserPoint = await this.userDb.insertOrUpdate(
                 currentUserPoint.id,
                 updatedPoint,
             )
+        } catch (error) {
+            this.handleError(error)
+        }
 
+        try {
             // 로그 남기기
             await this.historyDb.insert(
                 currentUserPoint.id,
@@ -102,13 +107,18 @@ export class PointService {
                     currentUserPoint.point, // 원래 포인트로 롤백
                 )
             } catch (rollbackError) {
-                // 롤백 실패: 로그를 남기고 관리자에게 알림
+                // 롤백 실패: 로그를 남김
                 this.logger.error(
                     'Failed to rollback user point update:',
                     rollbackError,
                 )
             }
-            throw error // 오류를 다시 던져서 호출자가 알 수 있게 함
+            this.handleError(error)
         }
+    }
+
+    handleError(error: any) {
+        //실제 db라면 error를 instnaceof로 구분하여 처리할 것
+        throw error
     }
 }
