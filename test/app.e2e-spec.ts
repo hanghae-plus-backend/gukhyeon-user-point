@@ -8,7 +8,7 @@ describe('AppController (e2e)', () => {
     let app: INestApplication
 
     const userId = 1
-    const max = 20
+    const max = 200
     const amount = 100
     const tenSecond = 100000
 
@@ -76,48 +76,75 @@ describe('AppController (e2e)', () => {
     it(
         '/(POST) point use is response OK',
         async () => {
-            await request(app.getHttpServer())
-                .patch(`/point/${userId}/charge`)
-                .send({ amount: 200 })
-                .expect(HttpStatus.OK)
-                .catch(e =>
-                    console.error(`/point/${userId}/charge Request failed`, e),
-                )
-
             const requests = Array(max)
                 .fill(null)
-                .map(async () => {
-                    // 30% 확률로 충전 선택합니다.
-                    const isCharge = Math.random() < 0.3
+                .map(() => {
+                    // 50% 확률로 충전 선택합니다.
+                    const isCharge = Math.random() < 0.5
+                    const isValid = Math.random() < 0.1
+                    const value = isValid ? -amount : amount
 
                     if (isCharge) {
-                        // 충전 요청을 실행합니다.
-                        await request(app.getHttpServer())
+                        return request(app.getHttpServer())
                             .patch(`/point/${userId}/charge`)
-                            .send({ amount })
-                            .expect(HttpStatus.OK)
-                            .catch(e =>
-                                console.error(
-                                    `/point/${userId}/charge Request failed`,
-                                    e,
-                                ),
-                            )
+                            .send({ amount: value })
+                            .then(response => {
+                                if (response.status >= 400) {
+                                    throw new Error(
+                                        response.body.message || 'Bad request',
+                                    )
+                                }
+                                return response
+                            })
                     } else {
-                        // 사용 요청을 실행합니다.
-                        await request(app.getHttpServer())
+                        return request(app.getHttpServer())
                             .patch(`/point/${userId}/use`)
-                            .send({ amount })
-                            .expect(HttpStatus.OK)
-                            .catch(e =>
-                                console.error(
-                                    `/point/${userId}/use Request failed`,
-                                    e,
-                                ),
-                            )
+                            .send({ amount: value })
+                            .then(response => {
+                                if (response.status >= 400) {
+                                    throw new Error(
+                                        response.body.message || 'Bad request',
+                                    )
+                                }
+                                return response
+                            })
                     }
                 })
 
-            await Promise.all(requests)
+            const responses = await Promise.allSettled(requests)
+
+            const rejectedResponses = responses.filter(
+                r => r.status === 'rejected',
+            )
+
+            const groupedByReason = rejectedResponses.reduce(
+                (groups, response) => {
+                    if (response.status === 'rejected') {
+                        const reason = response.reason
+                        if (!groups[reason]) {
+                            groups[reason] = 0
+                        }
+                        groups[reason]++
+                    }
+                    return groups
+                },
+                {},
+            )
+
+            console.log(groupedByReason)
+
+            const successCount = responses.filter(
+                r => r.status === 'fulfilled',
+            ).length
+
+            const failedCount = rejectedResponses.length
+
+            console.log(
+                'Success count:',
+                successCount,
+                'Failed count:',
+                failedCount,
+            )
 
             const result = await request(app.getHttpServer())
                 .get(`/point/${userId}`)
