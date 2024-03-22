@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { PointHistory, TransactionType, UserPoint } from './point.model'
 import { UserPointTable } from '../database/userpoint.table'
 import { PointHistoryTable } from '../database/pointhistory.table'
@@ -12,6 +12,7 @@ enum PointExceptionMessage {
 @Injectable()
 export class PointService {
     private lock = new AsyncLock()
+    private readonly logger = new Logger(PointService.name)
 
     constructor(
         private readonly userDb: UserPointTable,
@@ -70,27 +71,44 @@ export class PointService {
         amount: number,
         type: TransactionType,
     ): Promise<UserPoint> {
-        // 사용자 포인트 적용
-        const updatedPoint = currentUserPoint.point + amount
+        try {
+            // 사용자 포인트 적용
+            const updatedPoint = currentUserPoint.point + amount
 
-        // 사용자 포인트 갱신
-        const updatedUserPoint = await this.userDb.insertOrUpdate(
-            currentUserPoint.id,
-            updatedPoint,
-        )
+            // 사용자 포인트 갱신
+            const updatedUserPoint = await this.userDb.insertOrUpdate(
+                currentUserPoint.id,
+                updatedPoint,
+            )
 
-        // 로그 남기기
-        await this.historyDb.insert(
-            currentUserPoint.id,
-            amount,
-            type,
-            updatedUserPoint.updateMillis,
-        )
+            // 로그 남기기
+            await this.historyDb.insert(
+                currentUserPoint.id,
+                amount,
+                type,
+                updatedUserPoint.updateMillis,
+            )
 
-        return {
-            id: currentUserPoint.id,
-            point: updatedPoint,
-            updateMillis: updatedUserPoint.updateMillis,
+            return {
+                id: currentUserPoint.id,
+                point: updatedPoint,
+                updateMillis: updatedUserPoint.updateMillis,
+            }
+        } catch (error) {
+            // historyDb.insert가 실패하면 userDb.insertOrUpdate의 변경 사항을 롤백
+            try {
+                await this.userDb.insertOrUpdate(
+                    currentUserPoint.id,
+                    currentUserPoint.point, // 원래 포인트로 롤백
+                )
+            } catch (rollbackError) {
+                // 롤백 실패: 로그를 남기고 관리자에게 알림
+                this.logger.error(
+                    'Failed to rollback user point update:',
+                    rollbackError,
+                )
+            }
+            throw error // 오류를 다시 던져서 호출자가 알 수 있게 함
         }
     }
 }
