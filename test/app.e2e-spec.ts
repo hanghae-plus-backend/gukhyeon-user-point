@@ -21,57 +21,28 @@ describe('AppController (e2e)', () => {
         await app.init()
     })
 
-    // it('/ (PATCH) point charge is response BAD_REQUEST cause invalid amount', async () => {
-    //     const userId = 1
-    //     const amount = -100
+    it('/ (PATCH) point charge is response BAD_REQUEST cause invalid amount', async () => {
+        const userId = 1
+        const amount = -100
 
-    //     const result = await request(app.getHttpServer())
-    //         .patch(`/point/${userId}/charge`)
-    //         .send({ amount })
+        const result = await request(app.getHttpServer())
+            .patch(`/point/${userId}/charge`)
+            .send({ amount })
 
-    //     expect(result.status).toBe(HttpStatus.BAD_REQUEST)
-    // })
+        expect(result.status).toBe(HttpStatus.BAD_REQUEST)
+    })
 
-    // it(
-    //     '/ (PATCH) point charge is response OK',
-    //     async () => {
-    //         const requests = Array(max)
-    //             .fill(null)
-    //             .map(async () => {
-    //                 await request(app.getHttpServer())
-    //                     .patch(`/point/${userId}/charge`)
-    //                     .send({ amount })
-    //                     .expect(HttpStatus.OK)
-    //                     .catch(e =>
-    //                         console.error(
-    //                             `/point/${userId}/charge Request failed`,
-    //                             e,
-    //                         ),
-    //                     )
-    //             })
+    it('/(POST) point use is response BAD_REQUEST cause exceed amount', async () => {
+        await request(app.getHttpServer())
+            .patch(`/point/${userId}/charge`)
+            .send({ amount })
+            .expect(HttpStatus.OK)
 
-    //         await Promise.all(requests)
-
-    //         const result = await request(app.getHttpServer())
-    //             .get(`/point/${userId}/histories`)
-    //             .expect(HttpStatus.OK)
-
-    //         expect(result.body.length).toEqual(max)
-    //     },
-    //     tenSecond,
-    // )
-
-    // it('/(POST) point use is response BAD_REQUEST cause exceed amount', async () => {
-    //     await request(app.getHttpServer())
-    //         .patch(`/point/${userId}/charge`)
-    //         .send({ amount })
-    //         .expect(HttpStatus.OK)
-
-    //     await request(app.getHttpServer())
-    //         .patch(`/point/${userId}/use`)
-    //         .send({ amount: 10000 })
-    //         .expect(HttpStatus.BAD_REQUEST)
-    // })
+        await request(app.getHttpServer())
+            .patch(`/point/${userId}/use`)
+            .send({ amount: 10000 })
+            .expect(HttpStatus.BAD_REQUEST)
+    })
 
     it(
         '/(POST) point use is response OK',
