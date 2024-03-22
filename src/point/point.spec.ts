@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { BadRequestException } from '@nestjs/common'
 import { PointService } from './point.service'
 import { UserPointTable } from '../database/userpoint.table'
-import { PointHistoryTable } from '../database/pointhistory.table'
 
 describe('PointService', () => {
     let service: PointService
@@ -17,13 +16,6 @@ describe('PointService', () => {
                     useValue: {
                         selectById: jest.fn(),
                         insertOrUpdate: jest.fn(),
-                    },
-                },
-                {
-                    provide: PointHistoryTable,
-                    useValue: {
-                        insert: jest.fn(),
-                        selectAllByUserId: jest.fn(),
                     },
                 },
             ],
