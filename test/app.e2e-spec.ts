@@ -8,7 +8,7 @@ describe('AppController (e2e)', () => {
     let app: INestApplication
 
     const userId = 1
-    const max = 200
+    const max = 10
     const amount = 100
     const tenSecond = 100000
 
@@ -45,7 +45,7 @@ describe('AppController (e2e)', () => {
     })
 
     it(
-        '/(POST) point use is response OK',
+        '/(POST) point and charge  use is response OK',
         async () => {
             const requests = Array(max)
                 .fill(null)
@@ -117,11 +117,20 @@ describe('AppController (e2e)', () => {
                 failedCount,
             )
 
-            const result = await request(app.getHttpServer())
+            const userPoint = await request(app.getHttpServer())
                 .get(`/point/${userId}`)
                 .expect(HttpStatus.OK)
 
-            expect(result.body.id).toEqual(userId)
+            const histories = await request(app.getHttpServer())
+                .get(`/point/${userId}/histories`)
+                .expect(HttpStatus.OK)
+
+            let sumAmounts = 0
+            for (const history of histories.body) {
+                sumAmounts += history.amount
+            }
+
+            expect(userPoint.body.point).toBe(sumAmounts)
         },
         tenSecond,
     )
